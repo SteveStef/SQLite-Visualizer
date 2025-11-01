@@ -1,6 +1,7 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Button, Static, DataTable, Input, LoadingIndicator
 from textual.containers import Container, Horizontal, VerticalScroll
+from rich.text import Text
 from css import CSS as styles
 from database_conn import establish_connection, get_table_names, get_table_data, get_database_schema
 from bedrock import Bedrock
@@ -73,7 +74,7 @@ class DatabaseUI(App):
 
         # Set welcome instructions
         welcome = self.query_one("#welcome-box", Static)
-        welcome.update(
+        welcome.update(Text(
             "Database Browser\n\n"
             "How to use:\n"
             "• Click on a table to view its data\n"
@@ -84,7 +85,7 @@ class DatabaseUI(App):
             "• Press 'q' to quit\n"
             "• Ask anything in the text input\n"
             "  for AI assistance"
-        )
+        ))
 
         self.db_conn = establish_connection(sys.argv[1])
         self.tables_names = get_table_names(self.db_conn)
@@ -113,7 +114,7 @@ class DatabaseUI(App):
 
         # Update welcome box with instructions
         welcome.remove_class("left-align")
-        welcome.update(
+        welcome.update(Text(
             "Database Browser\n\n"
             "How to use:\n"
             "• Click on a table to view its data\n"
@@ -124,7 +125,7 @@ class DatabaseUI(App):
             "• Press 'q' to quit\n"
             "• Ask anything in the text input\n"
             "  for AI assistance"
-        )
+        ))
 
         # Update state
         self.view_state = "table_list"
@@ -153,7 +154,7 @@ class DatabaseUI(App):
 
         # Update welcome box with viewing message
         welcome.remove_class("left-align")
-        welcome.update(f"Viewing: {table_name}\n\nPress 'b' to go back")
+        welcome.update(Text(f"Viewing: {table_name}\n\nPress 'b' to go back"))
 
         # Update state
         self.view_state = "table_data"
@@ -176,7 +177,7 @@ class DatabaseUI(App):
         # Update welcome box with JSON
         welcome = self.query_one("#welcome-box", Static)
         welcome.add_class("left-align")
-        welcome.update(f"Row Details:\n\n{json_str}")
+        welcome.update(Text(f"Row Details:\n\n{json_str}"))
 
     def action_back(self) -> None:
         """Handle back action (b key)"""
@@ -217,7 +218,7 @@ class DatabaseUI(App):
             # Show error in welcome box
             welcome = self.query_one("#welcome-box", Static)
             welcome.add_class("left-align")
-            welcome.update(f"AI Initialization Failed\n\n{str(e)}\n\nPlease check your AWS credentials and configuration.")
+            welcome.update(Text(f"AI Initialization Failed\n\n{str(e)}\n\nPlease check your AWS credentials and configuration."))
 
     def action_toggle_mode(self) -> None:
         """Toggle between AI and SQL mode"""
@@ -269,7 +270,7 @@ class DatabaseUI(App):
             result_text += "No results"
 
         welcome.add_class("left-align")
-        welcome.update(result_text)
+        welcome.update(Text(result_text))
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         """Handle row selection in the DataTable"""
@@ -305,7 +306,7 @@ class DatabaseUI(App):
                 if auto_commit:
                     welcome = self.query_one("#welcome-box", Static)
                     welcome.add_class("left-align")
-                    welcome.update(f"SQL Query:\n{sql_query}\n\n✓ Query executed successfully\n{rowcount} row(s) affected")
+                    welcome.update(Text(f"SQL Query:\n{sql_query}\n\n✓ Query executed successfully\n{rowcount} row(s) affected"))
                     self.db_conn.commit()
                     self.notify(f"Query executed: {rowcount} row(s) affected", severity="information")
 
@@ -315,7 +316,7 @@ class DatabaseUI(App):
             # Show error in left box
             welcome = self.query_one("#welcome-box", Static)
             welcome.add_class("left-align")
-            welcome.update(f"SQL Error:\n\n{str(e)}")
+            welcome.update(Text(f"SQL Error:\n\n{str(e)}"))
             self.notify(f"SQL Error: {str(e)}", severity="error")
             return 0
 
@@ -336,7 +337,7 @@ class DatabaseUI(App):
                         self.query_one("#loading", LoadingIndicator).display = False
                         welcome = self.query_one("#welcome-box", Static)
                         welcome.add_class("left-align")
-                        welcome.update("AI assistant not initialized.\n\nPlease check your AWS credentials and try toggling AI mode again (press 't' twice).")
+                        welcome.update(Text("AI assistant not initialized.\n\nPlease check your AWS credentials and try toggling AI mode again (press 't' twice)."))
                         self.notify("AI assistant not available", severity="error")
                         return
 
@@ -349,7 +350,7 @@ class DatabaseUI(App):
                         self.query_one("#generated-sql", Static).update("")
                         welcome = self.query_one("#welcome-box", Static)
                         welcome.add_class("left-align")
-                        welcome.update(f"Request: {text}\n\nUnable to interpret a database query from this request.\nPlease provide more specific information or ask questions about your data.")
+                        welcome.update(Text(f"Request: {text}\n\nUnable to interpret a database query from this request.\nPlease provide more specific information or ask questions about your data."))
                         self.notify("Could not interpret query from request", severity="information")
                     else:
                         # Display the generated SQL
@@ -369,7 +370,7 @@ class DatabaseUI(App):
 
                             # Show confirmation message
                             welcome = self.query_one("#welcome-box", Static)
-                            welcome.update(f"SQL Query:\n{sql_query}\n\n⚠️ PENDING: {affected_rows} row(s) will be affected\n\nCONFIRM CHANGES?\nPress 'y' to commit or 'n' to cancel")
+                            welcome.update(Text(f"SQL Query:\n{sql_query}\n\n⚠️ PENDING: {affected_rows} row(s) will be affected\n\nCONFIRM CHANGES?\nPress 'y' to commit or 'n' to cancel"))
                             self.notify(f"Press 'y' to commit or 'n' to cancel ({affected_rows} rows)", severity="warning")
                         else:
                             # SELECT query - execute normally
@@ -382,7 +383,7 @@ class DatabaseUI(App):
             except Exception as e:
                 welcome = self.query_one("#welcome-box", Static)
                 welcome.add_class("left-align")
-                welcome.update(f"Error:\n\n{str(e)}")
+                welcome.update(Text(f"Error:\n\n{str(e)}"))
                 self.notify(f"Error: {str(e)}", severity="error")
             finally:
                 # Hide loading indicator when done
